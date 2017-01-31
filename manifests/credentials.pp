@@ -40,10 +40,10 @@ define windows_services::credentials(
   validate_bool($delayed)
   require windows_services::carbon
   exec{"Change credentials - $servicename":
-    command  => "\$username = '${username}';\$password = '${password}';\$privilege = \"SeServiceLogonRight\";[Reflection.Assembly]::LoadFile(\"${carbondll}\");[Carbon.LSA]::GrantPrivileges(\$username, \$privilege);\$serverName = \$env:COMPUTERNAME;\$service = '${servicename}';\$svcD=gwmi win32_service -computername \$serverName -filter \"name='\$service'\";\$StopStatus = \$svcD.StopService();\$ChangeStatus = \$svcD.change(\$null,\$null,\$null,\$null,\$null,\$null,\$username,\$password,\$null,\$null,\$null);\$startstatus = \$svcD.StartService();",
+    command  => template("${module_name}/change_credentials.ps1.erb"),
     provider => "powershell",
     timeout  => 300,
-    onlyif   => "\$username = '${username}';\$password = '${password}';\$serverName = \$env:COMPUTERNAME;\$service = '${servicename}';\$svcD=gwmi win32_service -computername \$serverName -filter \"name='\$service'\";if(\$svcD.GetPropertyValue('startname') -like '${username}'){exit 1}",
+    onlyif   => template("${module_name}/query_credentials.ps1.erb"),
   }
 
   if($delayed){
