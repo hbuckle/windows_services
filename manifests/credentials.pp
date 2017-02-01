@@ -26,7 +26,7 @@ define windows_services::credentials(
   $password    = '',
   $servicename = '',
   $delayed     = false,
-  $carbondll   = "C:\\Carbon.dll",
+  $carbondll   = 'C:\\Carbon.dll',
 ){
   if(empty($username)){
     fail('Username is mandatory')
@@ -39,22 +39,26 @@ define windows_services::credentials(
   }
   validate_bool($delayed)
   require windows_services::carbon
-  exec{"Change credentials - $servicename":
+
+  exec{ "Change credentials - ${servicename}":
     command  => template("${module_name}/change_credentials.ps1.erb"),
-    provider => "powershell",
+    provider => 'powershell',
     timeout  => 300,
     onlyif   => template("${module_name}/query_credentials.ps1.erb"),
   }
 
-  if($delayed){
-    $value = '1' 
-  }else{
+  if($delayed)
+  {
+    $value = '1'
+  }
+  else
+  {
     $value = '0'
   }
 
-  exec{"Set Start_Delayed - $servicename":
+  exec{ "Set Start_Delayed - ${servicename}":
     command  => "New-ItemProperty -Path \"HKLM:\\System\\CurrentControlSet\\Services\\${servicename}\" -Name 'DelayedAutoStart' -Value '${value}' -PropertyType 'DWORD' -Force;",
-    provider => "powershell",
+    provider => 'powershell',
     timeout  => 300,
     onlyif   => "if((test-path \"HKLM:\\System\\CurrentControlSet\\Services\\${servicename}\\\") -eq \$true){if((Get-ItemProperty -Path \"HKLM:\\System\\CurrentControlSet\\Services\\${servicename}\" -ErrorAction SilentlyContinue).DelayedAutoStart -eq '${value}'){exit 1;}else{exit 0;}}else{exit 1;}",
   }
